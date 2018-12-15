@@ -32,6 +32,7 @@ class bulk
     const size_t bulk_size;
     std::vector<std::string> vs;
     std::list<IbaseClass *> lHandler;
+    size_t brace_cnt;
 
 public:
     bulk(size_t size) : bulk_size(size)
@@ -66,8 +67,42 @@ public:
     {
         vs.push_back(s);
     }
+
+    friend std::istream& operator>>(std::istream&, bulk&);
 };
 
+std::istream& operator>>(std::istream& is, bulk& this_)
+{
+    std::string s;
+    is << s;
+
+    if (s == "{")
+    {
+        ++brace_cnt;
+        b.flush();
+        return is;
+    }
+    else if (s == "}")
+    {
+        if (brace_cnt > 0)
+        {
+            --brace_cnt;
+            if (brace_cnt == 0)
+            {
+                b.flush();
+                return is;
+            }
+        }
+    }
+    else
+        b.add(std::move(s));
+
+    if (b.is_full() && !brace_cnt)
+    {
+        b.flush();
+    }
+    return is;
+}
 
 int main(int argc, char ** argv)
 {
@@ -91,23 +126,7 @@ int main(int argc, char ** argv)
     while (1)
     {
         std::string s = "";
-        std::cin >> s;
-        if (s == "{")
-        {
-            ++brace_cnt;
-            b.flush();
-            continue;
-        }
-        else if (s == "}")
-            brace_cnt -= brace_cnt > 0 ? 1 : 0;
-        else
-            b.add(std::move(s));
-
-        std::cout << "(" << brace_cnt << ") \"" << s << "\"" << std::endl;
-        if (b.is_full() && !brace_cnt)
-        {
-            b.flush();
-        }
+        std::cin >> b;
     }
 
     return 0;
