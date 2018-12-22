@@ -74,35 +74,39 @@ public:
 std::istream& operator>>(std::istream& is, bulk& this_)
 {
     std::string s;
-    is << s;
+    std::getline(is, s);
+
+    std::cout << "echo " << s << std::endl;
 
     if (s == "{")
     {
-        ++brace_cnt;
-        b.flush();
+        ++this_.brace_cnt;
+        this_.flush();
         return is;
     }
     else if (s == "}")
     {
-        if (brace_cnt > 0)
+        if (this_.brace_cnt > 0)
         {
-            --brace_cnt;
-            if (brace_cnt == 0)
+            --this_.brace_cnt;
+            if (this_.brace_cnt == 0)
             {
-                b.flush();
+                this_.flush();
                 return is;
             }
         }
     }
     else
-        b.add(std::move(s));
+        this_.add(std::move(s));
 
-    if (b.is_full() && !brace_cnt)
+    if (this_.is_full() && !this_.brace_cnt)
     {
-        b.flush();
+        this_.flush();
     }
     return is;
 }
+
+
 
 int main(int argc, char ** argv)
 {
@@ -122,10 +126,8 @@ int main(int argc, char ** argv)
     b.addHandler(printerHandler);
     b.addHandler(saverHandler);
 
-    int brace_cnt = 0;
     while (1)
     {
-        std::string s = "";
         std::cin >> b;
     }
 
