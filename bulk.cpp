@@ -2,6 +2,9 @@
 #include <vector>
 #include <list>
 #include <fstream>
+//#include <chrono>
+#include <ctime>
+#include <string>
 
 class IbaseClass
 {
@@ -15,10 +18,10 @@ class saver : public IbaseClass
     public:
     void handle(const std::string &s) override
     {
-        std::cout << "tipa save " << s << std::endl;
+        static std::string filename = "bulk" + std::to_string(std::time(0)) + ".log";
 
         std::fstream fs;
-        fs.open ("test.txt", std::fstream::in | std::fstream::out | std::fstream::app);
+        fs.open (filename, std::fstream::in | std::fstream::out | std::fstream::app);
 
         fs << s;
 
@@ -56,9 +59,18 @@ public:
 
     void flush(void)
     {
-        std::string s("bulk:");
-        for (const auto &si : vs)
-            s += " " + si;
+        bool first = true;
+        std::string s("bulk: ");
+        for (const auto &si : vs) {
+            if (!first) {
+                s += ", ";
+                first = false;
+                std::cout << 1 << first << std::endl;
+            }
+            else
+                std::cout << 0 << first << std::endl;
+            s += si;
+        }
         std::cout << std::endl;
 
         for (const auto &h : lHandler)
