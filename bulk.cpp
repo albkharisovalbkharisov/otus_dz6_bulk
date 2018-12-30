@@ -6,6 +6,8 @@
 #include <ctime>
 #include <string>
 
+
+
 class IbaseClass
 {
 public:
@@ -62,13 +64,10 @@ public:
         bool first = true;
         std::string s("bulk: ");
         for (const auto &si : vs) {
-            if (!first) {
+            if (!first)
                 s += ", ";
-                first = false;
-                std::cout << 1 << first << std::endl;
-            }
             else
-                std::cout << 0 << first << std::endl;
+                first = false;
             s += si;
         }
         std::cout << std::endl;
