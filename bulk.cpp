@@ -2,7 +2,6 @@
 #include <vector>
 #include <list>
 #include <fstream>
-//#include <chrono>
 #include <ctime>
 #include <string>
 
@@ -11,32 +10,34 @@
 class IbaseClass
 {
 public:
-    virtual void handle(const std::string &s) = 0;
+    using type_to_handle = struct {
+        const std::string s;
+        std::time_t t;
+    };
+
+    virtual void handle(type_to_handle &ht) = 0;
 };
 
 
 class saver : public IbaseClass
 {
     public:
-    void handle(const std::string &s) override
+    void handle(type_to_handle &ht) override
     {
-        static std::string filename = "bulk" + std::to_string(std::time(0)) + ".log";
+        static std::string filename = "bulk" + std::to_string(ht.t) + ".log";
 
         std::fstream fs;
         fs.open (filename, std::fstream::in | std::fstream::out | std::fstream::app);
-
-        fs << s;
-
+        fs << ht.s;
         fs.close();
-
     }
 };
 
 class printer : public IbaseClass
 {
-    void handle(const std::string &s) override
+    void handle(type_to_handle &ht) override
     {
-        std::cout << s << std::endl;
+        std::cout << ht.s << std::endl;
     }
 };
 
@@ -47,6 +48,7 @@ class bulk
     std::vector<std::string> vs;
     std::list<IbaseClass *> lHandler;
     size_t brace_cnt;
+    std::time_t *time_first_chunk;
 
 public:
     bulk(size_t size) : bulk_size(size)
@@ -61,6 +63,8 @@ public:
 
     void flush(void)
     {
+        if (vs.size() == 0)
+            return;
         bool first = true;
         std::string s("bulk: ");
         for (const auto &si : vs) {
@@ -72,8 +76,10 @@ public:
         }
         std::cout << std::endl;
 
-        for (const auto &h : lHandler)
-            h->handle(s);
+        for (const auto &h : lHandler){
+            IbaseClass::type_to_handle th = {s, (std::time_t) 15};
+            h->handle(th);
+        }
 
         vs.clear();
     }
@@ -82,9 +88,16 @@ public:
     {
         return vs.size() >= bulk_size;
     }
+    bool is_empty(void)
+    {
+        return vs.size() > 0;
+    }
 
     void add(std::string &&s)
     {
+        static std::time_t time_now = std::time(0);
+        *time_first_chunk = time_now;
+        std::cout << "dbg_: time now " << time_now << std::endl;
         vs.push_back(s);
     }
 
@@ -96,12 +109,11 @@ std::istream& operator>>(std::istream& is, bulk& this_)
     std::string s;
     std::getline(is, s);
 
-    std::cout << "echo " << s << std::endl;
-
     if (s == "{")
     {
         ++this_.brace_cnt;
-        this_.flush();
+//        if (!this_.is_empty())
+            this_.flush();
         return is;
     }
     else if (s == "}")
