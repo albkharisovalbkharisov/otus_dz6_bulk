@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <list>
+#include <fstream>
 
 class IbaseClass
 {
@@ -15,6 +16,14 @@ class saver : public IbaseClass
     void handle(const std::string &s) override
     {
         std::cout << "tipa save " << s << std::endl;
+
+        std::fstream fs;
+        fs.open ("test.txt", std::fstream::in | std::fstream::out | std::fstream::app);
+
+        fs << s;
+
+        fs.close();
+
     }
 };
 
