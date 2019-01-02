@@ -6,6 +6,55 @@
 #include <string>
 #include <signal.h>
 
+void handle_signal(int signum);
+class IbaseTerminator
+{
+public:
+    virtual void signal_callback_handler(int signum) = 0;
+};
+
+// TODO: make singleton
+class terminator
+{
+public:
+    terminator(void)
+    {
+        signal(SIGINT/* | SIGKILL*/ | SIGTERM, handle_signal);
+    }
+    std::list<IbaseTerminator *> lHandler;
+    void add_handler(IbaseTerminator &handler)
+    {
+        lHandler.push_back(&handler);
+    }
+
+    void handle_all_signals(int signum)
+    {
+        std::cout << "caught signal " << signum << std::endl;
+        for (const auto &h : lHandler){
+            h->signal_callback_handler(signum);
+        }
+        switch (signum)
+        {
+        case SIGINT:
+        /*case SIGKILL:*/
+        case SIGTERM:
+            exit(signum);
+            break;
+        default:
+            std::cerr << "unhandled signal " << signum << std::endl;
+            break;
+        }
+    }
+};
+
+terminator t;
+
+void handle_signal(int signum)
+{
+    t.handle_all_signals(signum);
+}
+
+
 class IbaseClass
 {
 public:
@@ -40,7 +89,7 @@ class printer : public IbaseClass
     }
 };
 
-class bulk : class IBaseTerminator
+class bulk : public IbaseTerminator
 {
     const size_t bulk_size;
     std::vector<std::string> vs;
@@ -49,10 +98,7 @@ class bulk : class IBaseTerminator
     std::time_t *time_first_chunk;
 
 public:
-    bulk(size_t size, term_func tf) :
-                                    bulk_size(size),
-                                    time_first_chunk(0),
-                                    handle_signals(tf)
+    bulk(size_t size) : bulk_size(size), time_first_chunk(0)
     {
         vs.reserve(bulk_size);
     }
@@ -77,7 +123,7 @@ public:
         }
         std::cout << std::endl;
 
-        for (const auto &h : lHandler){
+        for (const auto &h : lHandler) {
             IbaseClass::type_to_handle ht = {s, *time_first_chunk};
             h->handle(ht);
         }
@@ -85,14 +131,9 @@ public:
         vs.clear();
     }
 
-    bool is_full(void)
-    {
-        return vs.size() >= bulk_size;
-    }
-    bool is_empty(void)
-    {
-        return vs.size() == 0;
-    }
+    bool is_full(void) { return vs.size() >= bulk_size; }
+    bool is_empty(void) { return vs.size() == 0; }
+    ~bulk(void) { flush(); }
 
     void add(std::string &&s)
     {
@@ -104,15 +145,9 @@ public:
     void signal_callback_handler(int signum)
     {
         if ((signum == SIGINT) || (signum == SIGTERM))
-        {
             flush();
-        }
     }
 
-    ~bulk(void)
-    {
-        flush();
-    }
     friend std::istream& operator>>(std::istream&, bulk&);
 };
 
@@ -144,62 +179,22 @@ std::istream& operator>>(std::istream& is, bulk& this_)
         this_.add(std::move(s));
 
     if (this_.is_full() && !this_.brace_cnt)
-    {
         this_.flush();
-    }
+
     return is;
 }
 
-terminator t;
-
-void handle_signal(int signum)
+void test(int a)
 {
-    t.handle_all_signals(signum);
+    std::cout << "CAUGHT! " << a << std::endl;
 }
-
-class IbaseTerminator
-{
-public:
-    virtual void signal_callback_handler(int signum) = 0;
-}
-
-class terminator
-{
-    terminator(void)
-    {
-        signal(SIGINT/* | SIGKILL*/ | SIGTERM, handle_signal);
-    }
-    std::list<IbaseTerminator *> lHandler;
-    void add_handler(IbaseTerminator &handler)
-    {
-        lHandler.push_back(&handler);
-    }
-
-    void handle_all_signals(int sigint)
-    {
-        std::cout << "caught signal " << sigint << std::endl;
-        for (const auto &h : lHandler){
-            h->signal_callback_handler(ht);
-        }
-        switch (signum)
-        {
-        case SIGINT:
-        /*case SIGKILL:*/
-        case SIGTERM:
-            exit(signum);
-            break;
-        default:
-            std::err << "unhandled signal " << sigint << std::endl;
-            break;
-        }
-    }
-};
-
 
 int main(int argc, char ** argv)
 {
     printer printerHandler;
     saver saverHandler;
+    test(8);
+    signal(SIGINT, test);
 
     if (argc != 2)
     {
@@ -214,7 +209,7 @@ int main(int argc, char ** argv)
     b.add_handler(saverHandler);
 
     // handle SIGINT, SIGTERM
-//    t.add_handler(b);
+    t.add_handler(b);
 
     while (1)
     {
