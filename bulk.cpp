@@ -19,7 +19,8 @@ class terminator
 public:
     terminator(void)
     {
-        signal(SIGINT/* | SIGKILL*/ | SIGTERM, handle_signal);
+        signal(SIGINT, handle_signal);
+        signal(SIGTERM, handle_signal);
     }
     std::list<IbaseTerminator *> lHandler;
     void add_handler(IbaseTerminator &handler)
@@ -29,7 +30,6 @@ public:
 
     void handle_all_signals(int signum)
     {
-        std::cout << "caught signal " << signum << std::endl;
         for (const auto &h : lHandler){
             h->signal_callback_handler(signum);
         }
@@ -47,13 +47,12 @@ public:
     }
 };
 
-terminator t;
+static terminator t;
 
 void handle_signal(int signum)
 {
     t.handle_all_signals(signum);
 }
-
 
 class IbaseClass
 {
@@ -184,17 +183,10 @@ std::istream& operator>>(std::istream& is, bulk& this_)
     return is;
 }
 
-void test(int a)
-{
-    std::cout << "CAUGHT! " << a << std::endl;
-}
-
 int main(int argc, char ** argv)
 {
     printer printerHandler;
     saver saverHandler;
-    test(8);
-    signal(SIGINT, test);
 
     if (argc != 2)
     {
