@@ -7,15 +7,33 @@
 #include <signal.h>
 #include "terminator.h"
 
+using vector_string = std::vector<std::string>;
+
 class IbaseClass
 {
 public:
     using type_to_handle = struct {
-        const std::string s;
+        const vector_string &vs;
         const std::time_t t;
     };
 
     virtual void handle(const type_to_handle &ht) = 0;
+
+protected:
+    std::string output_string_make(vector_string vs)
+    {
+        bool first = true;
+        std::string s("bulk: ");
+        for (const auto &si : vs) {
+            if (!first)
+                s += ", ";
+            else
+                first = false;
+            s += si;
+        }
+        s += '\n';
+        return s;
+    }
 };
 
 
@@ -28,7 +46,7 @@ public:
 
         std::fstream fs;
         fs.open (filename, std::fstream::in | std::fstream::out | std::fstream::app);
-        fs << ht.s;
+        fs << output_string_make(ht.vs);
         fs.close();
     }
 };
@@ -37,14 +55,14 @@ class printer : public IbaseClass
 {
     void handle(const type_to_handle &ht) override
     {
-        std::cout << ht.s << std::endl;
+        std::cout << output_string_make(ht.vs);
     }
 };
 
 class bulk : public IbaseTerminator
 {
     const size_t bulk_size;
-    std::vector<std::string> vs;
+    vector_string vs;
     std::list<IbaseClass *> lHandler;
     size_t brace_cnt;
     std::time_t *time_first_chunk;
@@ -64,19 +82,9 @@ public:
     {
         if (vs.size() == 0)
             return;
-        bool first = true;
-        std::string s("bulk: ");
-        for (const auto &si : vs) {
-            if (!first)
-                s += ", ";
-            else
-                first = false;
-            s += si;
-        }
-        std::cout << std::endl;
 
+        IbaseClass::type_to_handle ht = {vs, *time_first_chunk};
         for (const auto &h : lHandler) {
-            IbaseClass::type_to_handle ht = {s, *time_first_chunk};
             h->handle(ht);
         }
 
@@ -143,7 +151,7 @@ int main(int argc, char ** argv)
 
     if (argc != 2)
     {
-        std::cout << "ERROR: incorrect argument number" << std::endl;
+        std::cerr << "ERROR: incorrect argument number" << std::endl;
         return -1;
     }
 
