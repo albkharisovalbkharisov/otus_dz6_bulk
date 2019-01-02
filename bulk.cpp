@@ -7,6 +7,25 @@
 #include <signal.h>
 #include "terminator.h"
 
+/**
+ *                           interface, singleton
+ *                          +---------------------+
+ *     main() - - - - - - - |   IbaseTerminator   |
+ *                          +---------------------+
+ *                              /\
+ *                              ||
+ *     interface                ||
+ *   +------------+         +--------------+
+ *   | IbaseClass | - - - - | class bulk   |
+ *   +------------+         +--------------+
+ *     /\      /\
+ *     ||      ||
+ * +-------+  +---------+
+ * | saver |  | printer |
+ * +-------+  +---------+
+ *
+ */
+
 using vector_string = std::vector<std::string>;
 
 class IbaseClass
@@ -20,7 +39,7 @@ public:
     virtual void handle(const type_to_handle &ht) = 0;
 
 protected:
-    std::string output_string_make(vector_string vs)
+    std::string output_string_make(const vector_string &vs)
     {
         bool first = true;
         std::string s("bulk: ");
@@ -65,10 +84,10 @@ class bulk : public IbaseTerminator
     vector_string vs;
     std::list<IbaseClass *> lHandler;
     size_t brace_cnt;
-    std::time_t *time_first_chunk;
+    std::time_t time_first_chunk;
 
 public:
-    bulk(size_t size) : bulk_size(size), time_first_chunk(nullptr)
+    bulk(size_t size) : bulk_size(size), time_first_chunk(0)
     {
         vs.reserve(bulk_size);
     }
@@ -83,7 +102,7 @@ public:
         if (vs.size() == 0)
             return;
 
-        IbaseClass::type_to_handle ht = {vs, *time_first_chunk};
+        IbaseClass::type_to_handle ht = {vs, time_first_chunk};
         for (const auto &h : lHandler) {
             h->handle(ht);
         }
@@ -93,8 +112,12 @@ public:
 
     void add(std::string &&s)
     {
-        static std::time_t time_now = std::time(0);
-        time_first_chunk = &time_now;
+        // remembering first block coming can be done with "static" variable
+        // inside this function (see commit b51ab33), but it's not quite
+        // correct, because otherwise we can have only one "time_first_chunk"
+        // variable for all bulk class instances
+        if (time_first_chunk == 0)
+            time_first_chunk = std::time(0);
         vs.push_back(s);
     }
 
