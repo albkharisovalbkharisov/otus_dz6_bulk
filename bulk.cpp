@@ -12,17 +12,17 @@ class IbaseClass
 public:
     using type_to_handle = struct {
         const std::string s;
-        std::time_t t;
+        const std::time_t t;
     };
 
-    virtual void handle(type_to_handle &ht) = 0;
+    virtual void handle(const type_to_handle &ht) = 0;
 };
 
 
 class saver : public IbaseClass
 {
-    public:
-    void handle(type_to_handle &ht) override
+public:
+    void handle(const type_to_handle &ht) override
     {
         static std::string filename = "bulk" + std::to_string(ht.t) + ".log";
 
@@ -35,7 +35,7 @@ class saver : public IbaseClass
 
 class printer : public IbaseClass
 {
-    void handle(type_to_handle &ht) override
+    void handle(const type_to_handle &ht) override
     {
         std::cout << ht.s << std::endl;
     }
@@ -51,7 +51,7 @@ class bulk
     std::time_t *time_first_chunk;
 
 public:
-    bulk(size_t size) : bulk_size(size)
+    bulk(size_t size) : bulk_size(size), time_first_chunk(0)
     {
         vs.reserve(bulk_size);
     }
@@ -77,8 +77,8 @@ public:
         std::cout << std::endl;
 
         for (const auto &h : lHandler){
-            IbaseClass::type_to_handle th = {s, (std::time_t) 15};
-            h->handle(th);
+            IbaseClass::type_to_handle ht = {s, *time_first_chunk};
+            h->handle(ht);
         }
 
         vs.clear();
@@ -90,13 +90,13 @@ public:
     }
     bool is_empty(void)
     {
-        return vs.size() > 0;
+        return vs.size() == 0;
     }
 
     void add(std::string &&s)
     {
         static std::time_t time_now = std::time(0);
-        *time_first_chunk = time_now;
+        time_first_chunk = &time_now;
         std::cout << "dbg_: time now " << time_now << std::endl;
         vs.push_back(s);
     }
@@ -111,9 +111,9 @@ std::istream& operator>>(std::istream& is, bulk& this_)
 
     if (s == "{")
     {
-        ++this_.brace_cnt;
-//        if (!this_.is_empty())
+        if (!this_.is_empty() && (this_.brace_cnt == 0))
             this_.flush();
+        ++this_.brace_cnt;
         return is;
     }
     else if (s == "}")
@@ -158,6 +158,7 @@ int main(int argc, char ** argv)
     b.addHandler(printerHandler);
     b.addHandler(saverHandler);
 
+    std::cout << "program time start:" << std::time(0) << std::endl;
     while (1)
     {
         std::cin >> b;
