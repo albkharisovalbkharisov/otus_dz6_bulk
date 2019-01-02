@@ -50,7 +50,7 @@ class bulk : public IbaseTerminator
     std::time_t *time_first_chunk;
 
 public:
-    bulk(size_t size) : bulk_size(size), time_first_chunk(0)
+    bulk(size_t size) : bulk_size(size), time_first_chunk(nullptr)
     {
         vs.reserve(bulk_size);
     }
