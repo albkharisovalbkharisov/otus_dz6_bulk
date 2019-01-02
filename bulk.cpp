@@ -5,54 +5,7 @@
 #include <ctime>
 #include <string>
 #include <signal.h>
-
-void handle_signal(int signum);
-class IbaseTerminator
-{
-public:
-    virtual void signal_callback_handler(int signum) = 0;
-};
-
-// TODO: make singleton
-class terminator
-{
-public:
-    terminator(void)
-    {
-        signal(SIGINT, handle_signal);
-        signal(SIGTERM, handle_signal);
-    }
-    std::list<IbaseTerminator *> lHandler;
-    void add_handler(IbaseTerminator &handler)
-    {
-        lHandler.push_back(&handler);
-    }
-
-    void handle_all_signals(int signum)
-    {
-        for (const auto &h : lHandler){
-            h->signal_callback_handler(signum);
-        }
-        switch (signum)
-        {
-        case SIGINT:
-        /*case SIGKILL:*/
-        case SIGTERM:
-            exit(signum);
-            break;
-        default:
-            std::cerr << "unhandled signal " << signum << std::endl;
-            break;
-        }
-    }
-};
-
-static terminator t;
-
-void handle_signal(int signum)
-{
-    t.handle_all_signals(signum);
-}
+#include "terminator.h"
 
 class IbaseClass
 {
@@ -130,10 +83,6 @@ public:
         vs.clear();
     }
 
-    bool is_full(void) { return vs.size() >= bulk_size; }
-    bool is_empty(void) { return vs.size() == 0; }
-    ~bulk(void) { flush(); }
-
     void add(std::string &&s)
     {
         static std::time_t time_now = std::time(0);
@@ -146,6 +95,10 @@ public:
         if ((signum == SIGINT) || (signum == SIGTERM))
             flush();
     }
+
+    bool is_full(void) { return vs.size() >= bulk_size; }
+    bool is_empty(void) { return vs.size() == 0; }
+    ~bulk(void) { flush(); }
 
     friend std::istream& operator>>(std::istream&, bulk&);
 };
@@ -201,7 +154,7 @@ int main(int argc, char ** argv)
     b.add_handler(saverHandler);
 
     // handle SIGINT, SIGTERM
-    t.add_handler(b);
+    terminator::getInstance().add_signal_handler(b);
 
     while (1)
     {

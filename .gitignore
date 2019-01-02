@@ -5,4 +5,5 @@ CPackSourceConfig.cmake
 Makefile
 bulk
 cmake_install.cmake
+libterminator.a
 
