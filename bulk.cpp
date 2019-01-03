@@ -6,6 +6,8 @@
 #include <string>
 #include <signal.h>
 #include "terminator.h"
+#include <stdexcept>
+
 
 /**
  *                           interface, singleton
@@ -87,7 +89,7 @@ class bulk : public IbaseTerminator
     std::time_t time_first_chunk;
 
 public:
-    bulk(size_t size) : bulk_size(size), time_first_chunk(0)
+    bulk(size_t size) : bulk_size(size), brace_cnt(0), time_first_chunk(0)
     {
         vs.reserve(bulk_size);
     }
@@ -174,11 +176,26 @@ int main(int argc, char ** argv)
 
     if (argc != 2)
     {
-        std::cerr << "ERROR: incorrect argument number" << std::endl;
-        return -1;
+        std::cerr << "Incorrect number of arguments: " << argc - 1 << ", expected: 1" << std::endl;
+        return -4;
     }
 
-    const size_t j = atoi(argv[1]);
+    size_t j = 0;
+    std::string arg = argv[1];
+    try {
+        std::size_t pos;
+        j = std::stoi(arg, &pos);
+        if (pos < arg.size()) {
+            std::cerr << "Trailing characters after number: " << arg << '\n';
+            return -3;
+        }
+    } catch (std::invalid_argument const &ex) {
+        std::cerr << "Invalid number: " << arg << '\n';
+        return -1;
+    } catch (std::out_of_range const &ex) {
+        std::cerr << "Number out of range: " << arg << '\n';
+        return -2;
+    }
 
     class bulk b{j};
     b.add_handler(printerHandler);
