@@ -8,6 +8,7 @@
 #include "terminator.h"
 #include <stdexcept>
 
+#define SAVE_EACH_BULK_TO_SEPARATE_FILE 1
 
 /**
  *                           interface, singleton
@@ -63,7 +64,7 @@ class saver : public IbaseClass
 public:
     void handle(const type_to_handle &ht) override
     {
-        static std::string filename = "bulk" + std::to_string(ht.t) + ".log";
+        std::string filename = "bulk" + std::to_string(ht.t) + ".log";
 
         std::fstream fs;
         fs.open (filename, std::fstream::in | std::fstream::out | std::fstream::app);
@@ -110,6 +111,9 @@ public:
         }
 
         vs.clear();
+#if (SAVE_EACH_BULK_TO_SEPARATE_FILE == 1)
+        time_first_chunk = 0;
+#endif  // (SAVE_EACH_BULK_TO_SEPARATE_FILE == 1)
     }
 
     void add(std::string &&s)
