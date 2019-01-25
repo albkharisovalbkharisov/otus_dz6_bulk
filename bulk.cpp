@@ -95,6 +95,8 @@ public:
         vs.reserve(bulk_size);
     }
 
+    void parse_line(std::string &line);
+
     void add_handler(IbaseClass &handler)
     {
         lHandler.push_back(&handler);
@@ -116,7 +118,7 @@ public:
 #endif  // (SAVE_EACH_BULK_TO_SEPARATE_FILE == 1)
     }
 
-    void add(std::string &&s)
+    void add(std::string &s)
     {
         // remembering first block coming can be done with "static" variable
         // inside this function (see commit b51ab33), but it's not quite
@@ -136,41 +138,34 @@ public:
     bool is_full(void) { return vs.size() >= bulk_size; }
     bool is_empty(void) { return vs.size() == 0; }
     ~bulk(void) { flush(); }
-
-    friend std::istream& operator>>(std::istream&, bulk&);
 };
 
-std::istream& operator>>(std::istream& is, bulk& this_)
+void bulk::parse_line(std::string &line)
 {
-    std::string s;
-    std::getline(is, s);
-
-    if (s == "{")
+    if (line == "{")
     {
-        if (!this_.is_empty() && (this_.brace_cnt == 0))
-            this_.flush();
-        ++this_.brace_cnt;
-        return is;
+        if (!is_empty() && (brace_cnt == 0))
+            flush();
+        ++brace_cnt;
+        return;
     }
-    else if (s == "}")
+    else if (line == "}")
     {
-        if (this_.brace_cnt > 0)
+        if (brace_cnt > 0)
         {
-            --this_.brace_cnt;
-            if (this_.brace_cnt == 0)
+            --brace_cnt;
+            if (brace_cnt == 0)
             {
-                this_.flush();
-                return is;
+                flush();
+                return;
             }
         }
     }
     else
-        this_.add(std::move(s));
+        add(line);
 
-    if (this_.is_full() && !this_.brace_cnt)
-        this_.flush();
-
-    return is;
+    if (is_full() && !brace_cnt)
+        flush();
 }
 
 int main(int argc, char ** argv)
@@ -208,9 +203,9 @@ int main(int argc, char ** argv)
     // handle SIGINT, SIGTERM
     terminator::getInstance().add_signal_handler(b);
 
-    while (1)
+    for(std::string line; std::getline(std::cin, line);)
     {
-        std::cin >> b;
+        b.parse_line(line);
     }
 
     return 0;
