@@ -8,7 +8,7 @@
 #include "terminator.h"
 #include <stdexcept>
 
-#define SAVE_EACH_BULK_TO_SEPARATE_FILE 1
+#define SAVE_ALL_BULKS_TO_ONE_FILE 1
 
 /**
  *                           interface, singleton
@@ -42,6 +42,27 @@ public:
     virtual void handle(const type_to_handle &ht) = 0;
 
 protected:
+};
+
+
+class saver : public IbaseClass
+{
+public:
+    void handle(const type_to_handle &ht) override
+    {
+        std::string filename = "bulk" + std::to_string(ht.t) + ".log";
+
+        std::fstream fs;
+        fs.open (filename, std::fstream::in | std::fstream::out | std::fstream::app);
+        for (auto &a : ht.vs)
+            fs << a;
+        fs << '\n';
+        fs.close();
+    }
+};
+
+class printer : public IbaseClass
+{
     std::string output_string_make(const vector_string &vs)
     {
         bool first = true;
@@ -56,25 +77,7 @@ protected:
         s += '\n';
         return s;
     }
-};
 
-
-class saver : public IbaseClass
-{
-public:
-    void handle(const type_to_handle &ht) override
-    {
-        std::string filename = "bulk" + std::to_string(ht.t) + ".log";
-
-        std::fstream fs;
-        fs.open (filename, std::fstream::in | std::fstream::out | std::fstream::app);
-        fs << output_string_make(ht.vs);
-        fs.close();
-    }
-};
-
-class printer : public IbaseClass
-{
     void handle(const type_to_handle &ht) override
     {
         std::cout << output_string_make(ht.vs);
@@ -113,9 +116,9 @@ public:
         }
 
         vs.clear();
-#if (SAVE_EACH_BULK_TO_SEPARATE_FILE == 1)
+#if (SAVE_ALL_BULKS_TO_ONE_FILE == 0)
         time_first_chunk = 0;
-#endif  // (SAVE_EACH_BULK_TO_SEPARATE_FILE == 1)
+#endif  // (SAVE_ALL_BULKS_TO_ONE_FILE == 0)
     }
 
     void add(std::string &s)
@@ -131,13 +134,16 @@ public:
 
     void signal_callback_handler(int signum)
     {
+        (void) signum;
+        /* do nothing. don't make a partial bulk
         if ((signum == SIGINT) || (signum == SIGTERM))
             flush();
+            */
     }
 
     bool is_full(void) { return vs.size() >= bulk_size; }
     bool is_empty(void) { return vs.size() == 0; }
-    ~bulk(void) { flush(); }
+    ~bulk(void) { /* flush(); don't make a partial bulk */ }
 };
 
 void bulk::parse_line(std::string &line)
