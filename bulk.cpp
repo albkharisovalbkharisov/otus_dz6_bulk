@@ -8,7 +8,6 @@
 #include "terminator.h"
 #include <stdexcept>
 
-#define SAVE_ALL_BULKS_TO_ONE_FILE 1
 
 /**
  *                           interface, singleton
@@ -116,9 +115,7 @@ public:
         }
 
         vs.clear();
-#if (SAVE_ALL_BULKS_TO_ONE_FILE == 0)
         time_first_chunk = 0;
-#endif  // (SAVE_ALL_BULKS_TO_ONE_FILE == 0)
     }
 
     void add(std::string &s)
