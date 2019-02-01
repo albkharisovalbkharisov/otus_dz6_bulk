@@ -28,13 +28,11 @@
  *
  */
 
-using vector_string = std::vector<std::string>;
-
 class IbaseClass
 {
 public:
     using type_to_handle = struct {
-        const vector_string &vs;
+        const std::vector<std::string> &vs;
         const std::time_t t;
     };
 
@@ -63,7 +61,7 @@ public:
 
 class printer : public IbaseClass
 {
-    std::string output_string_make(const vector_string &vs)
+    std::string output_string_make(const std::vector<std::string> &vs)
     {
         bool first = true;
         std::string s("bulk: ");
@@ -87,7 +85,7 @@ class printer : public IbaseClass
 class bulk : public IbaseTerminator
 {
     const size_t bulk_size;
-    vector_string vs;
+    std::vector<std::string> vs;
     std::list<IbaseClass *> lHandler;
     size_t brace_cnt;
     std::time_t time_first_chunk;
