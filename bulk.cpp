@@ -53,9 +53,10 @@ public:
 
         std::fstream fs;
         fs.open (filename, std::fstream::in | std::fstream::out | std::fstream::app);
-        for (auto &a : ht.vs)
+        for (auto &a : ht.vs) {
             fs << a;
-        fs << '\n';
+            fs << '\n';
+        }
         fs.close();
     }
 };
