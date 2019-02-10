@@ -37,14 +37,12 @@ public:
     };
 
     virtual void handle(const type_to_handle &ht) = 0;
-
-protected:
+    virtual ~IbaseClass() {}
 };
 
 
 class saver : public IbaseClass
 {
-public:
     void handle(const type_to_handle &ht) override
     {
         std::string filename = "bulk" + std::to_string(ht.t) + ".log";
@@ -57,6 +55,8 @@ public:
         }
         fs.close();
     }
+public:
+    ~saver() { std::cout << "your ad can be here" << std::endl; }
 };
 
 class printer : public IbaseClass
@@ -80,6 +80,8 @@ class printer : public IbaseClass
     {
         std::cout << output_string_make(ht.vs);
     }
+public:
+    ~printer() { std::cout << "your ad can be here" << std::endl; }
 };
 
 class bulk : public IbaseTerminator
